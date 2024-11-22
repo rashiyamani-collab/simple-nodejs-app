@@ -1,0 +1,51 @@
+# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+
+name: Build and deploy container app to Azure Web App - githubrashiyaapp6
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: 'ubuntu-latest'
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Log in to registry
+      uses: docker/login-action@v2
+      with:
+        registry: https://rashiyaacr2.azurecr.io/
+        username: ${{ secrets.AzureAppService_ContainerUsername_2e2b6c5da0b348449cf6ec04d9c515c7 }}
+        password: ${{ secrets.AzureAppService_ContainerPassword_032e14c6be0d4539a20782c50b5ea30a }}
+
+    - name: Build and push container image to registry
+      uses: docker/build-push-action@v3
+      with:
+        push: true
+        tags: rashiyaacr2.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_2e2b6c5da0b348449cf6ec04d9c515c7 }}/latest:${{ github.sha }}
+        file: ./Dockerfile
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: 'production'
+      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+
+    steps:
+    - name: Deploy to Azure Web App
+      id: deploy-to-webapp
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: 'githubrashiyaapp6'
+        slot-name: 'production'
+        publish-profile: ${{ secrets.AzureAppService_PublishProfile_7f45adf63927448e8b6e9df1b4231219 }}
+        images: 'rashiyaacr2.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_2e2b6c5da0b348449cf6ec04d9c515c7 }}/latest:${{ github.sha }}'
